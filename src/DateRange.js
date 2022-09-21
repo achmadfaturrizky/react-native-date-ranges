@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Text, View, TouchableOpacity, Picker } from "react-native";
+import { Text, View, TouchableOpacity, Picker, ToastAndroid } from "react-native";
 import PropTypes from "prop-types";
 import moment from "moment";
 import normalize from "./normalizeText";
@@ -25,7 +25,7 @@ const styles = {
     height: normalize(120),
     width: "100%",
     justifyContent: "center",
-    backgroundColor: "#F5A623",
+    backgroundColor: "#8DC53F",
     paddingHorizontal: 20
   },
   dateContainer: {
@@ -35,12 +35,14 @@ const styles = {
   headTitleText: {
     fontSize: normalize(20),
     color: "white",
-    fontWeight: "bold"
+    fontWeight: "bold",
+    fontFamily: 'OpenSans',
   },
   headerDateSingle: {
     fontSize: 40,
     color: "white",
-    fontWeight: "bold"
+    fontWeight: "bold",
+    fontFamily: 'OpenSans',
   }
 };
 
@@ -64,9 +66,7 @@ export default class DateRange extends Component {
       clearEnd: "",
       clearSingle: props.currentDate.format(defalutFormat) || "",
       selectState: "monthAndDate", // or year
-      selectedYear: null,
-      textStartDate: props.textStartDate || "Start Date",
-      textEndDate: props.textEndDate || "End Date",
+      selectedYear: null
     };
   }
   previousMonth = () => {
@@ -93,12 +93,33 @@ export default class DateRange extends Component {
       return;
     }
     this.setState({ ...this.state, focus: focusedInput }, () => {
-      this.setState({ ...this.state, startDate, endDate });
+      const resultDay =  endDate - startDate
+      const duration = moment.duration(resultDay, 'milliseconds');
+      const days = duration.asDays();
+      if(days > 6){
+        this.setState({startDate: null, endDate: null});
+      }else{
+        this.setState({ ...this.state, startDate, endDate });
+      }
       if (endDate) {
-        this.setState({
-          clearStart: startDate.format(headFormat),
-          clearEnd: endDate.format(headFormat)
-        });
+        const endDateFormat =endDate.format(headFormat)
+        const startDateFormat = startDate.format(headFormat)
+        if(days > 6){
+          ToastAndroid.showWithGravity(
+            "Max 7 days!",
+            ToastAndroid.SHORT,
+            ToastAndroid.CENTER
+          );
+          this.setState({
+            clearStart: "",
+            clearEnd: ""
+          });
+        }else{
+          this.setState({
+            clearStart: startDateFormat,
+            clearEnd: endDateFormat
+          });
+        }
       } else {
         this.setState({
           clearStart: startDate.format(headFormat),
@@ -132,7 +153,7 @@ export default class DateRange extends Component {
     this.setState({ clearSingle: this.state.currentDate.format(headFormat) });
   };
   render() {
-    const markText = this.props.markText || "選擇日期";
+    const markText = this.props.markText || "";
     const { customStyles = {} } = this.props;
 
     const headerContainer = {
@@ -145,6 +166,7 @@ export default class DateRange extends Component {
       opacity: 0.8,
       marginBottom: 15,
       fontSize: normalize(18),
+      fontFamily: 'OpenSans',
       ...customStyles.headerMarkTitle
     };
     const headerDate = {
@@ -177,18 +199,18 @@ export default class DateRange extends Component {
               <Text style={markTitle}>{markText}</Text>
               <View style={styles.dateContainer}>
                 <Text style={headerDate}>
-                  {this.state.clearStart ? this.state.clearStart : this.state.textStartDate}
+                  {this.state.clearStart ? this.state.clearStart : "Start Date"}
                 </Text>
                 <Text style={styles.headTitleText} />
                 <Text style={headerDate}>
-                  {this.state.clearEnd ? this.state.clearEnd : this.state.textEndDate}
+                  {this.state.clearEnd ? this.state.clearEnd : "End Date"}
                 </Text>
               </View>
             </View>
           )}
         </View>
         {this.state.selectState === "monthAndDate" && (
-          <View style={[styles.calendar, {backgroundColor: this.props.calendarBgColor}]}>
+          <View style={styles.calendar}>
             <View style={styles.headActionContainer}>
               <TouchableOpacity onPress={this.previousMonth}>
                 <Text
@@ -196,14 +218,14 @@ export default class DateRange extends Component {
                     paddingHorizontal: 15,
                     fontSize: 18,
                     fontWeight: "bold",
-                    ...customStyles.monthPickerText
+                    fontFamily: 'OpenSans',
                   }}
                 >
                   {"<"}
                 </Text>
               </TouchableOpacity>
               <Text
-                style={{ fontSize: 20, color: "black", fontWeight: "bold", ...customStyles.monthPickerText }}
+                style={{ fontSize: 20, color: "black", fontWeight: "bold",  fontFamily: 'OpenSans', }}
               >
                 {this.state.focusedMonth.format("MMMM YYYY")}
               </Text>
@@ -213,7 +235,7 @@ export default class DateRange extends Component {
                     paddingHorizontal: 15,
                     fontSize: 18,
                     fontWeight: "bold",
-                    ...customStyles.monthPickerText
+                    fontFamily: 'OpenSans',
                   }}
                 >
                   {">"}
@@ -221,7 +243,6 @@ export default class DateRange extends Component {
               </TouchableOpacity>
             </View>
             <Month
-              customStyles={customStyles}
               mode={this.props.mode}
               date={this.props.date}
               startDate={this.props.startDate}
@@ -241,7 +262,7 @@ export default class DateRange extends Component {
           <View
             style={[
               styles.calendar,
-              { height: "75%", justifyContent: "center", backgroundColor: this.props.calendarBgColor }
+              { height: "75%", justifyContent: "center" }
             ]}
           >
             <Picker
